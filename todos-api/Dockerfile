@@ -1,32 +1,11 @@
-# Use official Node.js image (Node 8 is outdated, upgrading to Node 14)
-FROM node:14-alpine
-
-# Set working directory inside the container
+# Node.js Todos API
+FROM node:16
 WORKDIR /app
-
-# Copy package.json and package-lock.json for better caching
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install --only=production
-
-RUN npm install -g nodemon
-
-# Copy the rest of the application
+RUN npm install
 COPY . .
-
-# Expose the application port
 EXPOSE 8082
-
-# Set default environment variables (can be overridden at runtime)
-# ENV TODO_API_PORT=8082 \
-#     JWT_SECRET=DZ5O1JxC96rER4wsvh4r2/bLPKhnrl2TbO5dFq9Kyas= \
-#     REDIS_HOST=redis \
-#     REDIS_PORT=6379 \
-#     REDIS_CHANNEL=log_channel
-
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
 
 
 

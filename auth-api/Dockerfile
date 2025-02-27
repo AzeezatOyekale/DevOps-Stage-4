@@ -1,5 +1,5 @@
 # Build Stage
-FROM golang:1.21-alpine AS build-stage
+FROM golang:1.23 AS builde-stage
 
 # Set working directory
 WORKDIR /app
@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o auth-api
+RUN CGO_ENABLED=0 GOOS=linux go build -o auth-api .
 
 # Final Stage: Create a minimal runtime image
 FROM alpine:latest
@@ -21,7 +21,7 @@ FROM alpine:latest
 WORKDIR /app
 
 # Copy the built binary from the build stage
-COPY --from=build-stage /app/auth-api .
+COPY --from=builde-stage /app/auth-api .
 
 # Expose the application port (default to 8081)
 EXPOSE 8081
@@ -33,9 +33,6 @@ EXPOSE 8081
 
 # Run the application
 CMD ["./auth-api"]
-
-
-
 
 
 

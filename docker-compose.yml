@@ -32,62 +32,73 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     ports:
-      - "8080:80"
+      - "8080:8080"
       # - "9411:9411"
-    env_file:
-      - .env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - AUTH_API_ADDRESS=http://auth-api:8081
+      - TODOS_API_ADDRESS=http://todos-api:8082
     depends_on:
-      - auth
-      - todo
+      - auth-api
+      - todos-api
+    command: npm run dev
+
     # labels:
     #   - "traefik.enable=true"
     #   - "traefik.http.routers.frontend.entrypoints=websecure"    # Ensure traffic is served over HTTPS
     #   - "traefik.http.routers.frontend.rule=Host(`bmp.com.ng`)"  # Domain for the frontend service
     #   - "traefik.http.routers.frontend.tls.certresolver=mytls"   # Use ACME resolver for SSL certs
 
-  auth:
+  auth-api:
     build:
       context: ./auth-api
       dockerfile: Dockerfile
-    container_name: auth
+    container_name: auth-api
     ports:
-      - "8081:8081"
+      - "${AUTH_API_PORT}:8081"
     env_file:
       - .env
     depends_on:
-      - users
+      - users-api
     # labels:
     #   - "traefik.enable=true"
     #   - "traefik.http.routers.auth.entrypoints=websecure"    # Ensure traffic is served over HTTPS
     #   - "traefik.http.routers.auth.rule=Host(`auth.bmp.com.ng`)"  # Domain for the auth service
     #   - "traefik.http.routers.auth.tls.certresolver=mytls"   # Use ACME resolver for SSL certs
 
-  todo:
+  todos-api:
     build:
       context: ./todos-api
       dockerfile: Dockerfile
-    container_name: todo
+    container_name: todos-api
     ports:
       - "8082:8082"
-    env_file:
-      - .env
+    environment:
+      - TODOS_API_PORT=${TODOS_API_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_CHANNEL=${REDIS_CHANNEL}
     depends_on:
-      - redis
+      - redis-queue
     # labels:
     #   - "traefik.enable=true"
     #   - "traefik.http.routers.todos.entrypoints=websecure"    # Ensure traffic is served over HTTPS
     #   - "traefik.http.routers.todos.rule=Host(`todos.bmp.com.ng`)"  # Domain for the todos service
     #   - "traefik.http.routers.todos.tls.certresolver=mytls"   # Use ACME resolver for SSL certs
 
-  users:
+  users-api:
     build:
       context: ./users-api
       dockerfile: Dockerfile
-    container_name: user
+    container_name: users-api
     ports:
-      - "8083:8083"
-    env_file:
-      - .env
+      - "${SERVER_PORT}:8083"
+    environment:
+      - SERVER_PORT=${SERVER_PORT}
+      - JWT_SECRET=${JWT_SECRET}
     # labels:
     #   - "traefik.enable=true"
     #   - "traefik.http.routers.users.entrypoints=websecure"    # Ensure traffic is served over HTTPS
@@ -99,29 +110,27 @@ services:
       context: ./log-message-processor
       dockerfile: Dockerfile
     container_name: log
-    env_file:
-      - .env
+    environment:
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_CHANNEL=${REDIS_CHANNEL}
     depends_on:
-      - redis
+      - redis-queue
 
-  redis:
+  redis-queue:
     image: redis:alpine
-    container_name: redis
+    container_name: redis-queue
     restart: always
     ports:
       - "6379:6379"
-    env_file:
-      - .env
+    volumes:
+      - redis_data:/data
 
-  zipkin:
-    image: openzipkin/zipkin
-    container_name: zipkin
-    ports:
-      - "9411:9411"
-    env_file:
-      - .env
+
 
  
+volumes:
+  redis_data:
 
 networks:
   default:

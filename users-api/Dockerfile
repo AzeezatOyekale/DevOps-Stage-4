@@ -1,42 +1,15 @@
-# Build Stage: Use Maven to build the application
-FROM maven:3.9.6-eclipse-temurin-8 AS build-stage
-
-# Set working directory
+# Java Spring Boot Users API
+FROM maven:3.8.6-openjdk-11 AS builder
 WORKDIR /app
-
-# Copy project files
 COPY pom.xml .
 COPY src ./src
+RUN mvn package -DskipTests
 
-# Pre-download Maven dependencies
-RUN mvn dependency:go-offline
-
-# Build the Spring Boot application
-RUN mvn clean package -DskipTests
-
-# Runtime Stage: Create a smaller final image
-FROM eclipse-temurin:8-jre-alpine
-
-# Set working directory
+FROM openjdk:8-jre-slim
 WORKDIR /app
-
-# Create a non-root user for better security
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring
-
-# Copy the built JAR file from the build stage (Fixed Reference)
-COPY --from=build-stage /app/target/users-api-0.0.1-SNAPSHOT.jar app.jar
-
-# Expose the application port
+COPY --from=builder /app/target/*.jar ./users-api.jar
 EXPOSE 8083
-
-# Set default environment variables (can be overridden at runtime)
-# ENV JWT_SECRET=DZ5O1JxC96rER4wsvh4r2/bLPKhnrl2TbO5dFq9Kyas= \
-#     SERVER_PORT=8083
-
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
-
+CMD ["java", "-jar", "users-api.jar"]
 
 
 
